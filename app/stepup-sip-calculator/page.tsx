@@ -1,4 +1,4 @@
-import StepupSipCalculator from "@/components/StepupSipCalculator";
+import StepupSipCalculator from "@/components/step-up-sip-calculator";
 
 export default function StepupSipCalculatorPage() {
   return <StepupSipCalculator />;

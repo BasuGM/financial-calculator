@@ -11,13 +11,24 @@ import {
 import { InputField } from "@/components/common/input-field";
 import { ProgressBar } from "@/components/common/progress-bar";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TableDialog } from "@/components/common/table-dialog";
+import { ChartDialog } from "@/components/common/chart-dialog";
 import { Info } from "lucide-react";
+
+interface YearlyBreakdown {
+  year: number;
+  withdrawal: number;
+  totalWithdrawn: number;
+  balanceStart: number;
+  balanceEnd: number;
+}
 
 interface ResultsCardProps {
   totalWithdrawal: number;
   remainingBalance: number;
   initialInvestment: number;
   depletionMonth: number | null;
+  yearlyBreakdown: YearlyBreakdown[];
 }
 
 function ResultsCard({
@@ -25,12 +36,75 @@ function ResultsCard({
   remainingBalance,
   initialInvestment,
   depletionMonth,
+  yearlyBreakdown,
 }: ResultsCardProps) {
-  const withdrawalPercentage = (totalWithdrawal / initialInvestment) * 100;
-  const remainingPercentage = (remainingBalance / initialInvestment) * 100;
+  const withdrawalPercentage = initialInvestment > 0 ? (totalWithdrawal / initialInvestment) * 100 : 0;
+  const remainingPercentage = initialInvestment > 0 ? (remainingBalance / initialInvestment) * 100 : 0;
   const centerText = remainingPercentage > 100 
     ? `${(remainingPercentage / 100).toFixed(2)}x Remaining`
     : `${remainingPercentage.toFixed(1)}% Remaining`;
+
+  // Prepare data for table dialog
+  const tableColumns = [
+    { key: "year", label: "Year", align: "left" as const, minWidth: "60px" },
+    { key: "withdrawal", label: "Withdrawn", align: "right" as const, minWidth: "120px" },
+    { key: "totalWithdrawn", label: "Total Withdrawn", align: "right" as const, minWidth: "140px" },
+    { key: "balanceStart", label: "Balance Start", align: "right" as const, minWidth: "130px", className: "text-muted-foreground" },
+    { key: "balanceEnd", label: "Balance End", align: "right" as const, minWidth: "130px", className: "font-semibold" },
+  ];
+
+  const tableData = yearlyBreakdown.map((row) => ({
+    year: row.year,
+    withdrawal: row.withdrawal,
+    totalWithdrawn: row.totalWithdrawn,
+    balanceStart: row.balanceStart,
+    balanceEnd: row.balanceEnd,
+  }));
+
+  const formatCell = (key: string, value: any) => {
+    if (key === "year") {
+      return value;
+    }
+    return `₹ ${value.toLocaleString("en-IN")}`;
+  };
+
+  const highlightRow = (rowIndex: number) => {
+    return (rowIndex + 1) % 5 === 0;
+  };
+
+  // Prepare data for chart dialog
+  const chartData = [
+    { year: 0, withdrawn: 0, balance: initialInvestment },
+    ...yearlyBreakdown.map((row) => ({
+      year: row.year,
+      withdrawn: row.totalWithdrawn,
+      balance: row.balanceEnd,
+    })),
+  ];
+
+  const chartLines = [
+    {
+      dataKey: "withdrawn",
+      name: "Total Withdrawn",
+      color: "#3b82f6",
+      gradientId: "colorWithdrawn",
+    },
+    {
+      dataKey: "balance",
+      name: "Remaining Balance",
+      color: "#22c55e",
+      gradientId: "colorBalance",
+    },
+  ];
+
+  const formatCurrency = (value: number) => {
+    if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`;
+    if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`;
+    return `₹${(value / 1000).toFixed(0)}K`;
+  };
+
+  const formatTooltip = (value: number | undefined) =>
+    value !== undefined ? `₹${value.toLocaleString("en-IN")}` : "";
 
   return (
     <Card className="rounded-none">
@@ -68,6 +142,31 @@ function ResultsCard({
           leftLabel="Remaining"
           rightLabel="Withdrawn"
         />
+
+        <div className="grid grid-cols-2 gap-2">
+          <TableDialog
+            triggerLabel="View Year-by-Year Breakdown"
+            title="Year-by-Year Breakdown"
+            description="Detailed annual progression of your SWP step-up withdrawals"
+            columns={tableColumns}
+            data={tableData}
+            formatCell={formatCell}
+            highlightRow={highlightRow}
+          />
+          <ChartDialog
+            triggerLabel="View Withdrawal Progress"
+            title="Withdrawal Progress Over Time"
+            description="Visual representation of your portfolio depletion with step-up withdrawals"
+            data={chartData}
+            lines={chartLines}
+            xAxisKey="year"
+            xAxisLabel="Years"
+            yAxisLabel="Amount"
+            formatYAxis={formatCurrency}
+            formatTooltip={formatTooltip}
+          />
+        </div>
+
         {depletionMonth && (
           <Alert className="rounded-none">
             <Info className="h-4 w-4" />
@@ -119,7 +218,7 @@ function InputsCard({
           label="Total Investment"
           value={totalInvestment}
           onChange={setTotalInvestment}
-          min={100000}
+          min={0}
           max={50000000}
           step={100000}
           prefix="₹"
@@ -130,7 +229,7 @@ function InputsCard({
           label="Initial Monthly Withdrawal"
           value={monthlyWithdrawal}
           onChange={setMonthlyWithdrawal}
-          min={5000}
+          min={0}
           max={500000}
           step={1000}
           prefix="₹"
@@ -152,7 +251,7 @@ function InputsCard({
           label="Expected return rate (p.a)"
           value={expectedReturn}
           onChange={setExpectedReturn}
-          min={1}
+          min={0}
           max={30}
           step={0.5}
           suffix="%"
@@ -163,7 +262,7 @@ function InputsCard({
           label="Time period"
           value={timePeriod}
           onChange={setTimePeriod}
-          min={1}
+          min={0}
           max={40}
           step={1}
           suffix="Yr"
@@ -185,33 +284,61 @@ export default function SwpStepupCalculator() {
     const months = timePeriod * 12;
     let balance = totalInvestment;
     let currentWithdrawal = monthlyWithdrawal;
-    let totalWithdrawn = 0;
+    let totalWithdrawnAmount = 0;
     let depletionMonth = null;
 
-    for (let i = 0; i < months; i++) {
-      // Increase withdrawal at the start of each year
-      if (i > 0 && i % 12 === 0) {
-        currentWithdrawal = currentWithdrawal * (1 + stepUpPercentage / 100);
+    // Calculate yearly breakdown
+    const yearlyBreakdown: YearlyBreakdown[] = [];
+
+    for (let year = 1; year <= timePeriod; year++) {
+      const balanceStart = balance;
+      let yearWithdrawal = 0;
+
+      // Process 12 months for this year
+      for (let month = 1; month <= 12; month++) {
+        if (balance > 0) {
+          // Increase withdrawal at the start of each year (except first year, first month)
+          if (year > 1 && month === 1) {
+            currentWithdrawal = currentWithdrawal * (1 + stepUpPercentage / 100);
+          }
+
+          balance = balance * (1 + monthlyRate) - currentWithdrawal;
+          
+          if (balance <= 0 && depletionMonth === null) {
+            // Partial withdrawal in final month
+            const actualWithdrawal = balanceStart * (1 + monthlyRate);
+            yearWithdrawal += actualWithdrawal;
+            totalWithdrawnAmount += actualWithdrawal;
+            depletionMonth = (year - 1) * 12 + month;
+            balance = 0;
+            break;
+          } else if (balance > 0) {
+            yearWithdrawal += currentWithdrawal;
+            totalWithdrawnAmount += currentWithdrawal;
+          }
+        }
       }
 
-      balance = balance * (1 + monthlyRate) - currentWithdrawal;
-      totalWithdrawn += currentWithdrawal;
+      yearlyBreakdown.push({
+        year,
+        withdrawal: Math.round(yearWithdrawal),
+        totalWithdrawn: Math.round(totalWithdrawnAmount),
+        balanceStart: Math.round(balanceStart),
+        balanceEnd: Math.round(Math.max(0, balance)),
+      });
 
-      if (balance <= 0 && depletionMonth === null) {
-        depletionMonth = i + 1;
-        totalWithdrawn -= currentWithdrawal - (balance + currentWithdrawal);
-        balance = 0;
-        break;
-      }
+      if (balance <= 0) break;
     }
 
-    const remainingBalance = Math.max(0, balance);
+    const totalWithdrawal = Math.round(totalWithdrawnAmount);
+    const remainingBalance = Math.max(0, Math.round(balance));
 
     return {
-      totalWithdrawal: Math.round(totalWithdrawn),
-      remainingBalance: Math.round(remainingBalance),
+      totalWithdrawal,
+      remainingBalance,
       initialInvestment: totalInvestment,
       depletionMonth,
+      yearlyBreakdown,
     };
   };
 
@@ -238,6 +365,7 @@ export default function SwpStepupCalculator() {
           remainingBalance={results.remainingBalance}
           initialInvestment={results.initialInvestment}
           depletionMonth={results.depletionMonth}
+          yearlyBreakdown={results.yearlyBreakdown}
         />
       </div>
     </div>

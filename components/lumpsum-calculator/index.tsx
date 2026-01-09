@@ -1,13 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { InputField } from "@/components/common/input-field";
 import { ProgressBar } from "@/components/common/progress-bar";
 import { TableDialog } from "@/components/common/table-dialog";
@@ -15,8 +9,7 @@ import { ChartDialog } from "@/components/common/chart-dialog";
 
 interface YearlyBreakdown {
   year: number;
-  investment: number;
-  totalInvested: number;
+  yearStartValue: number;
   interestEarned: number;
   yearEndValue: number;
 }
@@ -28,12 +21,7 @@ interface ResultsCardProps {
   yearlyBreakdown: YearlyBreakdown[];
 }
 
-function ResultsCard({
-  totalInvestment,
-  estimatedReturns,
-  futureValue,
-  yearlyBreakdown,
-}: ResultsCardProps) {
+function ResultsCard({ totalInvestment, estimatedReturns, futureValue, yearlyBreakdown }: ResultsCardProps) {
   const investmentPercentage = futureValue > 0 ? (totalInvestment / futureValue) * 100 : 0;
   const returnsPercentage = futureValue > 0 ? (estimatedReturns / futureValue) * 100 : 0;
   const centerText = `${returnsPercentage.toFixed(1)}% Returns`;
@@ -41,16 +29,14 @@ function ResultsCard({
   // Prepare data for table dialog
   const tableColumns = [
     { key: "year", label: "Year", align: "left" as const, minWidth: "60px" },
-    { key: "investment", label: "Invested", align: "right" as const, minWidth: "110px" },
-    { key: "totalInvested", label: "Total Invested", align: "right" as const, minWidth: "130px" },
+    { key: "yearStartValue", label: "Year Start Value", align: "right" as const, minWidth: "140px", className: "text-muted-foreground" },
     { key: "interestEarned", label: "Interest Earned", align: "right" as const, minWidth: "140px", className: "text-green-600" },
     { key: "yearEndValue", label: "Year End Value", align: "right" as const, minWidth: "140px", className: "font-semibold" },
   ];
 
   const tableData = yearlyBreakdown.map((row) => ({
     year: row.year,
-    investment: row.investment,
-    totalInvested: row.totalInvested,
+    yearStartValue: row.yearStartValue,
     interestEarned: row.interestEarned,
     yearEndValue: row.yearEndValue,
   }));
@@ -68,10 +54,10 @@ function ResultsCard({
 
   // Prepare data for chart dialog
   const chartData = [
-    { year: 0, invested: 0, futureValue: 0 },
+    { year: 0, invested: totalInvestment, futureValue: totalInvestment },
     ...yearlyBreakdown.map((row) => ({
       year: row.year,
-      invested: row.totalInvested,
+      invested: totalInvestment,
       futureValue: row.yearEndValue,
     })),
   ];
@@ -141,7 +127,7 @@ function ResultsCard({
           <TableDialog
             triggerLabel="View Year-by-Year Breakdown"
             title="Year-by-Year Breakdown"
-            description="Detailed annual progression of your SIP investment"
+            description="Detailed annual progression of your lumpsum investment"
             columns={tableColumns}
             data={tableData}
             formatCell={formatCell}
@@ -150,7 +136,7 @@ function ResultsCard({
           <ChartDialog
             triggerLabel="View Growth Chart"
             title="Investment Growth Over Time"
-            description="Visual representation of your portfolio growth and compounding effect"
+            description="Visual representation of your lumpsum investment growth and compounding effect"
             data={chartData}
             lines={chartLines}
             xAxisKey="year"
@@ -166,8 +152,8 @@ function ResultsCard({
 }
 
 interface InputsCardProps {
-  monthlyInvestment: number;
-  setMonthlyInvestment: (value: number) => void;
+  totalInvestment: number;
+  setTotalInvestment: (value: number) => void;
   expectedReturn: number;
   setExpectedReturn: (value: number) => void;
   timePeriod: number;
@@ -175,8 +161,8 @@ interface InputsCardProps {
 }
 
 function InputsCard({
-  monthlyInvestment,
-  setMonthlyInvestment,
+  totalInvestment,
+  setTotalInvestment,
   expectedReturn,
   setExpectedReturn,
   timePeriod,
@@ -185,20 +171,20 @@ function InputsCard({
   return (
     <Card className="rounded-none">
       <CardHeader>
-        <CardTitle>SIP Calculator</CardTitle>
+        <CardTitle>Lumpsum Calculator</CardTitle>
         <CardDescription>
-          Calculate returns on your Systematic Investment Plan
+          Calculate returns on your one-time investment
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-12">
         <InputField
-          id="monthly-investment"
-          label="Monthly investment"
-          value={monthlyInvestment}
-          onChange={setMonthlyInvestment}
+          id="total-investment"
+          label="Total investment"
+          value={totalInvestment}
+          onChange={setTotalInvestment}
           min={0}
-          max={100000}
-          step={500}
+          max={100000000}
+          step={10000}
           prefix="₹"
         />
 
@@ -207,7 +193,7 @@ function InputsCard({
           label="Expected return rate (p.a)"
           value={expectedReturn}
           onChange={setExpectedReturn}
-          min={1}
+          min={0}
           max={30}
           step={0.5}
           suffix="%"
@@ -218,7 +204,7 @@ function InputsCard({
           label="Time period"
           value={timePeriod}
           onChange={setTimePeriod}
-          min={1}
+          min={0}
           max={40}
           step={1}
           suffix="Yr"
@@ -228,62 +214,35 @@ function InputsCard({
   );
 }
 
-export default function SipCalculator() {
-  const [monthlyInvestment, setMonthlyInvestment] = useState(25000);
+export default function LumpsumCalculator() {
+  const [totalInvestment, setTotalInvestment] = useState(1000000);
   const [expectedReturn, setExpectedReturn] = useState(12);
   const [timePeriod, setTimePeriod] = useState(10);
 
-  const calculateSIP = () => {
-    const monthlyRate = expectedReturn / 12 / 100;
-    const months = timePeriod * 12;
+  const calculateLumpsum = () => {
+    const annualRate = expectedReturn / 100;
     
-    // Handle edge case when rate is 0
-    let futureValue;
-    if (monthlyRate === 0) {
-      futureValue = monthlyInvestment * months;
-    } else {
-      futureValue =
-        monthlyInvestment *
-        (((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate) *
-          (1 + monthlyRate));
-    }
-    
-    const totalInvestment = monthlyInvestment * months;
-    const estimatedReturns = futureValue - totalInvestment;
-
     // Calculate yearly breakdown
     const yearlyBreakdown: YearlyBreakdown[] = [];
-    let runningBalance = 0;
-    let runningInvestment = 0;
+    let currentValue = totalInvestment;
 
     for (let year = 1; year <= timePeriod; year++) {
-      const monthsInYear = year * 12;
+      const yearStartValue = currentValue;
+      const interestEarned = currentValue * annualRate;
+      const yearEndValue = currentValue * (1 + annualRate);
       
-      // Handle edge case when rate is 0
-      let yearEndValue;
-      if (monthlyRate === 0) {
-        yearEndValue = monthlyInvestment * monthsInYear;
-      } else {
-        yearEndValue =
-          monthlyInvestment *
-          (((Math.pow(1 + monthlyRate, monthsInYear) - 1) / monthlyRate) *
-            (1 + monthlyRate));
-      }
-
-      const yearInvestment = monthlyInvestment * 12;
-      runningInvestment += yearInvestment;
-      const previousBalance = runningBalance;
-      runningBalance = yearEndValue;
-      const interestEarned = runningBalance - runningInvestment;
-
       yearlyBreakdown.push({
         year,
-        investment: yearInvestment,
-        totalInvested: Math.round(runningInvestment),
+        yearStartValue: Math.round(yearStartValue),
         interestEarned: Math.round(interestEarned),
-        yearEndValue: Math.round(runningBalance),
+        yearEndValue: Math.round(yearEndValue),
       });
+      
+      currentValue = yearEndValue;
     }
+
+    const futureValue = totalInvestment * Math.pow(1 + annualRate, timePeriod);
+    const estimatedReturns = futureValue - totalInvestment;
 
     return {
       futureValue: Math.round(futureValue),
@@ -293,14 +252,14 @@ export default function SipCalculator() {
     };
   };
 
-  const results = calculateSIP();
+  const results = calculateLumpsum();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="grid gap-6 md:grid-cols-2">
         <InputsCard
-          monthlyInvestment={monthlyInvestment}
-          setMonthlyInvestment={setMonthlyInvestment}
+          totalInvestment={totalInvestment}
+          setTotalInvestment={setTotalInvestment}
           expectedReturn={expectedReturn}
           setExpectedReturn={setExpectedReturn}
           timePeriod={timePeriod}
