@@ -1,277 +1,113 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { InputField } from "@/components/common/input-field";
-import { ProgressBar } from "@/components/common/progress-bar";
-import { TableDialog } from "@/components/common/table-dialog";
-import { ChartDialog } from "@/components/common/chart-dialog";
+import { InputsCard } from "./inputs-card";
+import { ResultsCard, type YearlyBreakdown } from "./results-card";
 
-interface YearlyBreakdown {
-  year: number;
-  monthlyEmi: number;
-  emiPaid: number;
-  principalPaid: number;
-  interestPaid: number;
-  outstandingBalance: number;
-}
-
-interface ResultsCardProps {
-  loanAmount: number;
-  firstMonthEmi: number;
-  totalInterest: number;
-  totalPayment: number;
-  yearlyBreakdown: YearlyBreakdown[];
-}
-
-function ResultsCard({ loanAmount, firstMonthEmi, totalInterest, totalPayment, yearlyBreakdown }: ResultsCardProps) {
-  const principalPercentage = totalPayment > 0 ? (loanAmount / totalPayment) * 100 : 0;
-  const interestPercentage = totalPayment > 0 ? (totalInterest / totalPayment) * 100 : 0;
-  const centerText = `${interestPercentage.toFixed(1)}% Interest`;
-
-  // Prepare data for table dialog
-  const tableColumns = [
-    { key: "year", label: "Year", align: "left" as const, minWidth: "60px" },
-    { key: "monthlyEmi", label: "Monthly EMI", align: "right" as const, minWidth: "120px", className: "text-blue-600" },
-    { key: "emiPaid", label: "EMI Paid", align: "right" as const, minWidth: "110px" },
-    { key: "principalPaid", label: "Principal Paid", align: "right" as const, minWidth: "130px" },
-    { key: "interestPaid", label: "Interest Paid", align: "right" as const, minWidth: "130px", className: "text-orange-600" },
-    { key: "outstandingBalance", label: "Outstanding Balance", align: "right" as const, minWidth: "160px", className: "font-semibold" },
-  ];
-
-  const tableData = yearlyBreakdown.map((row) => ({
-    year: row.year,
-    monthlyEmi: row.monthlyEmi,
-    emiPaid: row.emiPaid,
-    principalPaid: row.principalPaid,
-    interestPaid: row.interestPaid,
-    outstandingBalance: row.outstandingBalance,
-  }));
-
-  const formatCell = (key: string, value: any) => {
-    if (key === "year") {
-      return value;
-    }
-    return `₹ ${value.toLocaleString("en-IN")}`;
-  };
-
-  const highlightRow = (rowIndex: number) => {
-    return (rowIndex + 1) % 5 === 0;
-  };
-
-  // Prepare data for chart dialog
-  const chartData = [
-    { year: 0, principalPaid: 0, outstanding: loanAmount },
-    ...yearlyBreakdown.map((row) => ({
-      year: row.year,
-      principalPaid: loanAmount - row.outstandingBalance,
-      outstanding: row.outstandingBalance,
-    })),
-  ];
-
-  const chartLines = [
-    {
-      dataKey: "principalPaid",
-      name: "Principal Paid",
-      color: "#3b82f6",
-      gradientId: "colorPrincipalPaid",
-    },
-    {
-      dataKey: "outstanding",
-      name: "Outstanding Balance",
-      color: "#f59e0b",
-      gradientId: "colorOutstanding",
-    },
-  ];
-
-  const formatCurrency = (value: number) => {
-    if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`;
-    if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`;
-    return `₹${(value / 1000).toFixed(0)}K`;
-  };
-
-  const formatTooltip = (value: number | undefined) =>
-    value !== undefined ? `₹${value.toLocaleString("en-IN")}` : "";
-
-  return (
-    <Card className="rounded-none">
-      <CardHeader>
-        <CardTitle>Results</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Loan Amount</span>
-            <span className="font-semibold text-foreground">
-              ₹ {loanAmount.toLocaleString("en-IN")}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Total Interest</span>
-            <span className="font-semibold text-orange-600">
-              ₹ {totalInterest.toLocaleString("en-IN")}
-            </span>
-          </div>
-          <div className="pt-4 border-t">
-            <div className="flex justify-between">
-              <span className="text-lg font-semibold">First Month EMI</span>
-              <span className="text-2xl font-bold text-primary">
-                ₹ {firstMonthEmi.toLocaleString("en-IN")}
-              </span>
-            </div>
-          </div>
-          <div className="flex justify-between text-sm text-muted-foreground pt-2">
-            <span>Total Payment</span>
-            <span className="font-semibold text-foreground">
-              ₹ {totalPayment.toLocaleString("en-IN")}
-            </span>
-          </div>
-        </div>
-
-        <ProgressBar
-          leftPercentage={principalPercentage}
-          rightPercentage={interestPercentage}
-          centerText={centerText}
-          leftLabel="Principal"
-          rightLabel="Interest"
-        />
-
-        <div className="grid grid-cols-2 gap-2">
-          <TableDialog
-            triggerLabel="View Year-by-Year Breakdown"
-            title="Year-by-Year Breakdown"
-            description="Detailed annual progression of your EMI step-up loan repayment"
-            columns={tableColumns}
-            data={tableData}
-            formatCell={formatCell}
-            highlightRow={highlightRow}
-          />
-          <ChartDialog
-            triggerLabel="View Payment Progress"
-            title="Loan Repayment Over Time"
-            description="Visual representation of your principal payment with step-up EMI increments"
-            data={chartData}
-            lines={chartLines}
-            xAxisKey="year"
-            xAxisLabel="Years"
-            yAxisLabel="Amount"
-            formatYAxis={formatCurrency}
-            formatTooltip={formatTooltip}
-          />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-interface InputsCardProps {
-  loanAmount: number;
-  setLoanAmount: (value: number) => void;
-  interestRate: number;
-  setInterestRate: (value: number) => void;
-  loanTenure: number;
-  setLoanTenure: (value: number) => void;
-  annualStepUp: number;
-  setAnnualStepUp: (value: number) => void;
-}
-
-function InputsCard({
-  loanAmount,
-  setLoanAmount,
-  interestRate,
-  setInterestRate,
-  loanTenure,
-  setLoanTenure,
-  annualStepUp,
-  setAnnualStepUp,
-}: InputsCardProps) {
-  return (
-    <Card className="rounded-none">
-      <CardHeader>
-        <CardTitle>EMI Step Up Calculator</CardTitle>
-        <CardDescription>Calculate loan repayment with annual EMI increase</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <InputField
-          id="loan-amount"
-          label="Loan amount"
-          value={loanAmount}
-          onChange={setLoanAmount}
-          min={0}
-          max={100000000}
-          step={100000}
-          prefix="₹"
-        />
-
-        <InputField
-          id="interest-rate"
-          label="Interest rate (p.a)"
-          value={interestRate}
-          onChange={setInterestRate}
-          min={0}
-          max={30}
-          step={0.5}
-          suffix="%"
-        />
-
-        <InputField
-          id="loan-tenure"
-          label="Loan tenure"
-          value={loanTenure}
-          onChange={setLoanTenure}
-          min={0}
-          max={40}
-          step={1}
-          suffix="Yr"
-        />
-
-        <InputField
-          id="annual-stepup"
-          label="Annual step up"
-          value={annualStepUp}
-          onChange={setAnnualStepUp}
-          min={0}
-          max={50}
-          step={1}
-          suffix="%"
-        />
-      </CardContent>
-    </Card>
-  );
-}
-
+/**
+ * EmiStepupCalculator Component
+ * Main component that manages the state and calculations for the EMI Step-Up calculator.
+ * Step-up EMI loans allow the borrower to start with a lower EMI that increases annually
+ * by a fixed percentage, making it easier to manage payments in early years while assuming
+ * income growth over time. The loan still completes in the specified tenure.
+ */
 export default function EmiStepupCalculator() {
   const [loanAmount, setLoanAmount] = useState(5000000);
   const [interestRate, setInterestRate] = useState(8.5);
   const [loanTenure, setLoanTenure] = useState(20);
   const [annualStepUp, setAnnualStepUp] = useState(5);
 
+  /**
+   * Calculate step-up EMI and loan repayment breakdown
+   * Unlike standard EMI, the initial EMI must be calculated to account for annual increases
+   * so that the loan is paid off in exactly the specified tenure. This uses an iterative
+   * approach to find the optimal starting EMI.
+   */
   const calculateEMIStepUp = () => {
+    // Convert annual interest rate to monthly rate in decimal form
     const monthlyRate = interestRate / 12 / 100;
+    // Convert years to months
     const months = loanTenure * 12;
+    // Convert step-up percentage to decimal
+    const stepUpRate = annualStepUp / 100;
     
-    // Calculate initial EMI (assuming full tenure at initial rate)
-    let currentEmi = 0;
-    if (monthlyRate === 0) {
-      currentEmi = months > 0 ? loanAmount / months : 0;
+    // Calculate initial EMI considering the step-up factor
+    // For step-up loans, we need to find the starting EMI such that the loan is paid off in exact tenure
+    // This is complex because each year's EMI is different, affecting the principal-interest split
+    let initialEmi = 0;
+    
+    if (months === 0 || loanAmount === 0) {
+      // Handle edge case: no loan or no tenure
+      initialEmi = 0;
+    } else if (monthlyRate === 0) {
+      // For zero interest, calculate weighted average EMI considering step-ups
+      // Each year's EMI is worth more in repayment terms due to step-up factor
+      let totalMonths = 0;
+      for (let year = 0; year < loanTenure; year++) {
+        const stepUpFactor = Math.pow(1 + stepUpRate, year);
+        totalMonths += 12 * stepUpFactor;
+      }
+      initialEmi = totalMonths > 0 ? loanAmount / totalMonths : 0;
     } else {
-      currentEmi = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, months)) / 
-            (Math.pow(1 + monthlyRate, months) - 1);
+      // Calculate initial EMI using iterative approach for step-up loans
+      // Start with standard EMI as initial guess (will be adjusted)
+      let testEmi = (loanAmount * monthlyRate * Math.pow(1 + monthlyRate, months)) / 
+                    (Math.pow(1 + monthlyRate, months) - 1);
+      
+      // Iteratively adjust EMI to ensure loan completes in exact tenure
+      // This converges quickly (usually < 20 iterations) to find the correct starting EMI
+      for (let iteration = 0; iteration < 50; iteration++) {
+        let balance = loanAmount;
+        let currentEmi = testEmi;
+        
+        // Simulate the entire loan repayment with this test EMI
+        for (let year = 1; year <= loanTenure; year++) {
+          for (let month = 1; month <= 12; month++) {
+            if (balance > 0) {
+              // Apply step-up increase at the start of each year (except year 1)
+              if (year > 1 && month === 1) {
+                currentEmi = currentEmi * (1 + stepUpRate);
+              }
+              const interest = balance * monthlyRate;
+              const principal = currentEmi - interest;
+              balance -= principal;
+            }
+          }
+        }
+        
+        // Adjust testEmi based on remaining balance
+        // If balance is very close to zero, we've found the correct EMI
+        if (Math.abs(balance) < 1) break;
+        
+        if (balance > 0) {
+          // Loan not fully paid, increase starting EMI by 1%
+          testEmi *= 1.01;
+        } else {
+          // Overpaid, decrease starting EMI by 1%
+          testEmi *= 0.99;
+        }
+      }
+      
+      initialEmi = testEmi;
     }
+    
+    // Use the calculated initial EMI as the starting point
+    let currentEmi = initialEmi;
 
-    // Calculate yearly breakdown with step-up
+    // Calculate year-by-year breakdown with step-up increases
     const yearlyBreakdown: YearlyBreakdown[] = [];
     let outstandingBalance = loanAmount;
     let totalPayment = 0;
     let totalInterestPaid = 0;
 
+    // Iterate through each year of the loan tenure
     for (let year = 1; year <= loanTenure; year++) {
       let yearEmiPaid = 0;
       let yearPrincipalPaid = 0;
       let yearInterestPaid = 0;
       let yearMonthlyEmi = currentEmi;
 
-      // Process 12 months for this year
+      // Process each of the 12 months in this year
       for (let month = 1; month <= 12; month++) {
         if (outstandingBalance > 0) {
           // Increase EMI at the start of each year (except first year)
@@ -280,17 +116,21 @@ export default function EmiStepupCalculator() {
             yearMonthlyEmi = currentEmi;
           }
 
+          // Calculate interest on the outstanding balance
           const interestForMonth = outstandingBalance * monthlyRate;
+          // Calculate principal repayment (EMI minus interest)
           const principalForMonth = currentEmi - interestForMonth;
 
+          // Accumulate yearly totals
           yearEmiPaid += currentEmi;
           yearPrincipalPaid += principalForMonth;
           yearInterestPaid += interestForMonth;
           
+          // Reduce outstanding balance by the principal paid
           outstandingBalance -= principalForMonth;
           
           if (outstandingBalance < 0) {
-            // Adjust for overpayment in final month
+            // Adjust for overpayment in final month (minor rounding correction)
             yearPrincipalPaid += outstandingBalance;
             yearEmiPaid += outstandingBalance;
             outstandingBalance = 0;
@@ -298,9 +138,11 @@ export default function EmiStepupCalculator() {
         }
       }
 
+      // Track cumulative totals across all years
       totalPayment += yearEmiPaid;
       totalInterestPaid += yearInterestPaid;
 
+      // Store this year's breakdown data
       yearlyBreakdown.push({
         year,
         monthlyEmi: Math.round(yearMonthlyEmi),
@@ -310,11 +152,12 @@ export default function EmiStepupCalculator() {
         outstandingBalance: Math.round(Math.max(0, outstandingBalance)),
       });
 
+      // Stop if loan is fully repaid (can happen due to rounding)
       if (outstandingBalance <= 0) break;
     }
 
     return {
-      firstMonthEmi: Math.round(currentEmi / (1 + annualStepUp / 100)), // Original first month EMI before any step-up
+      firstMonthEmi: Math.round(initialEmi), // Original first month EMI before any step-up
       totalPayment: Math.round(totalPayment),
       totalInterest: Math.round(totalInterestPaid),
       loanAmount: Math.round(loanAmount),

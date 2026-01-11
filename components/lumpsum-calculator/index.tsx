@@ -1,234 +1,39 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { InputField } from "@/components/common/input-field";
-import { ProgressBar } from "@/components/common/progress-bar";
-import { TableDialog } from "@/components/common/table-dialog";
-import { ChartDialog } from "@/components/common/chart-dialog";
+import { InputsCard } from "./inputs-card";
+import { ResultsCard, type YearlyBreakdown } from "./results-card";
 
-interface YearlyBreakdown {
-  year: number;
-  yearStartValue: number;
-  interestEarned: number;
-  yearEndValue: number;
-}
-
-interface ResultsCardProps {
-  totalInvestment: number;
-  estimatedReturns: number;
-  futureValue: number;
-  yearlyBreakdown: YearlyBreakdown[];
-}
-
-function ResultsCard({ totalInvestment, estimatedReturns, futureValue, yearlyBreakdown }: ResultsCardProps) {
-  const investmentPercentage = futureValue > 0 ? (totalInvestment / futureValue) * 100 : 0;
-  const returnsPercentage = futureValue > 0 ? (estimatedReturns / futureValue) * 100 : 0;
-  const centerText = `${returnsPercentage.toFixed(1)}% Returns`;
-
-  // Prepare data for table dialog
-  const tableColumns = [
-    { key: "year", label: "Year", align: "left" as const, minWidth: "60px" },
-    { key: "yearStartValue", label: "Year Start Value", align: "right" as const, minWidth: "140px", className: "text-muted-foreground" },
-    { key: "interestEarned", label: "Interest Earned", align: "right" as const, minWidth: "140px", className: "text-green-600" },
-    { key: "yearEndValue", label: "Year End Value", align: "right" as const, minWidth: "140px", className: "font-semibold" },
-  ];
-
-  const tableData = yearlyBreakdown.map((row) => ({
-    year: row.year,
-    yearStartValue: row.yearStartValue,
-    interestEarned: row.interestEarned,
-    yearEndValue: row.yearEndValue,
-  }));
-
-  const formatCell = (key: string, value: any) => {
-    if (key === "year") {
-      return value;
-    }
-    return `₹ ${value.toLocaleString("en-IN")}`;
-  };
-
-  const highlightRow = (rowIndex: number) => {
-    return (rowIndex + 1) % 5 === 0;
-  };
-
-  // Prepare data for chart dialog
-  const chartData = [
-    { year: 0, invested: totalInvestment, futureValue: totalInvestment },
-    ...yearlyBreakdown.map((row) => ({
-      year: row.year,
-      invested: totalInvestment,
-      futureValue: row.yearEndValue,
-    })),
-  ];
-
-  const chartLines = [
-    {
-      dataKey: "invested",
-      name: "Total Invested",
-      color: "#3b82f6",
-      gradientId: "colorInvested",
-    },
-    {
-      dataKey: "futureValue",
-      name: "Future Value",
-      color: "#22c55e",
-      gradientId: "colorFutureValue",
-    },
-  ];
-
-  const formatCurrency = (value: number) => {
-    if (value >= 10000000) return `₹${(value / 10000000).toFixed(1)}Cr`;
-    if (value >= 100000) return `₹${(value / 100000).toFixed(1)}L`;
-    return `₹${(value / 1000).toFixed(0)}K`;
-  };
-
-  const formatTooltip = (value: number | undefined) =>
-    value !== undefined ? `₹${value.toLocaleString("en-IN")}` : "";
-
-  return (
-    <Card className="rounded-none">
-      <CardHeader>
-        <CardTitle>Results</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Total Investment</span>
-            <span className="font-semibold text-foreground">
-              ₹ {totalInvestment.toLocaleString("en-IN")}
-            </span>
-          </div>
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Estimated Returns</span>
-            <span className="font-semibold text-green-600">
-              ₹ {estimatedReturns.toLocaleString("en-IN")}
-            </span>
-          </div>
-          <div className="pt-4 border-t">
-            <div className="flex justify-between">
-              <span className="text-lg font-semibold">Future Value</span>
-              <span className="text-2xl font-bold text-primary">
-                ₹ {futureValue.toLocaleString("en-IN")}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <ProgressBar
-          leftPercentage={investmentPercentage}
-          rightPercentage={returnsPercentage}
-          centerText={centerText}
-          leftLabel="Investment"
-          rightLabel="Returns"
-        />
-
-        <div className="grid grid-cols-2 gap-2">
-          <TableDialog
-            triggerLabel="View Year-by-Year Breakdown"
-            title="Year-by-Year Breakdown"
-            description="Detailed annual progression of your lumpsum investment"
-            columns={tableColumns}
-            data={tableData}
-            formatCell={formatCell}
-            highlightRow={highlightRow}
-          />
-          <ChartDialog
-            triggerLabel="View Growth Chart"
-            title="Investment Growth Over Time"
-            description="Visual representation of your lumpsum investment growth and compounding effect"
-            data={chartData}
-            lines={chartLines}
-            xAxisKey="year"
-            xAxisLabel="Years"
-            yAxisLabel="Amount"
-            formatYAxis={formatCurrency}
-            formatTooltip={formatTooltip}
-          />
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-interface InputsCardProps {
-  totalInvestment: number;
-  setTotalInvestment: (value: number) => void;
-  expectedReturn: number;
-  setExpectedReturn: (value: number) => void;
-  timePeriod: number;
-  setTimePeriod: (value: number) => void;
-}
-
-function InputsCard({
-  totalInvestment,
-  setTotalInvestment,
-  expectedReturn,
-  setExpectedReturn,
-  timePeriod,
-  setTimePeriod,
-}: InputsCardProps) {
-  return (
-    <Card className="rounded-none">
-      <CardHeader>
-        <CardTitle>Lumpsum Calculator</CardTitle>
-        <CardDescription>
-          Calculate returns on your one-time investment
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-12">
-        <InputField
-          id="total-investment"
-          label="Total investment"
-          value={totalInvestment}
-          onChange={setTotalInvestment}
-          min={0}
-          max={100000000}
-          step={10000}
-          prefix="₹"
-        />
-
-        <InputField
-          id="expected-return"
-          label="Expected return rate (p.a)"
-          value={expectedReturn}
-          onChange={setExpectedReturn}
-          min={0}
-          max={30}
-          step={0.5}
-          suffix="%"
-        />
-
-        <InputField
-          id="time-period"
-          label="Time period"
-          value={timePeriod}
-          onChange={setTimePeriod}
-          min={0}
-          max={40}
-          step={1}
-          suffix="Yr"
-        />
-      </CardContent>
-    </Card>
-  );
-}
-
+/**
+ * LumpsumCalculator Component
+ * Main component that manages the state and calculations for the lumpsum investment calculator.
+ * A lumpsum investment is a one-time investment where the entire amount is invested at once
+ * and grows through compounding over the specified time period.
+ */
 export default function LumpsumCalculator() {
   const [totalInvestment, setTotalInvestment] = useState(1000000);
   const [expectedReturn, setExpectedReturn] = useState(12);
   const [timePeriod, setTimePeriod] = useState(10);
 
+  /**
+   * Calculate lumpsum investment returns
+   * Uses compound interest formula: FV = PV × (1 + r)^n
+   * where FV = Future Value, PV = Present Value, r = annual rate, n = years
+   */
   const calculateLumpsum = () => {
+    // Convert percentage to decimal for calculations
     const annualRate = expectedReturn / 100;
     
-    // Calculate yearly breakdown
+    // Calculate year-by-year growth to show progression
     const yearlyBreakdown: YearlyBreakdown[] = [];
     let currentValue = totalInvestment;
 
+    // Iterate through each year to calculate compounding growth
     for (let year = 1; year <= timePeriod; year++) {
       const yearStartValue = currentValue;
+      // Calculate interest earned for this year
       const interestEarned = currentValue * annualRate;
+      // Apply compound interest: previous value × (1 + rate)
       const yearEndValue = currentValue * (1 + annualRate);
       
       yearlyBreakdown.push({
@@ -238,10 +43,13 @@ export default function LumpsumCalculator() {
         yearEndValue: Math.round(yearEndValue),
       });
       
+      // Update current value for next iteration
       currentValue = yearEndValue;
     }
 
+    // Calculate final future value using compound interest formula
     const futureValue = totalInvestment * Math.pow(1 + annualRate, timePeriod);
+    // Calculate total returns earned (future value minus original investment)
     const estimatedReturns = futureValue - totalInvestment;
 
     return {
