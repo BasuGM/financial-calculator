@@ -115,7 +115,7 @@ export function ResultsCard({ loanAmount, firstMonthEmi, totalInterest, totalPay
       <CardHeader>
         <CardTitle>Results</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="px-4 md:px-6 space-y-4">
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>Loan Amount</span>
@@ -153,7 +153,7 @@ export function ResultsCard({ loanAmount, firstMonthEmi, totalInterest, totalPay
           rightLabel="Interest"
         />
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-2">
           <TableDialog
             triggerLabel="View Year-by-Year Breakdown"
             title="Year-by-Year Breakdown"

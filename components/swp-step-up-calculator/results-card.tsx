@@ -117,7 +117,7 @@ export function ResultsCard({
       <CardHeader>
         <CardTitle>Results</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="px-4 md:px-6 space-y-4">
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>Initial Investment</span>
@@ -132,9 +132,9 @@ export function ResultsCard({
             </span>
           </div>
           <div className="pt-4 border-t">
-            <div className="flex justify-between">
-              <span className="text-lg font-semibold">Remaining Balance</span>
-              <span className="text-2xl font-bold text-primary">
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-0">
+              <span className="text-base sm:text-lg font-semibold">Remaining Balance</span>
+              <span className="text-xl sm:text-2xl font-bold text-primary">
                 ₹ {remainingBalance.toLocaleString("en-IN")}
               </span>
             </div>
@@ -149,7 +149,7 @@ export function ResultsCard({
           rightLabel="Withdrawn"
         />
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-2">
           <TableDialog
             triggerLabel="View Year-by-Year Breakdown"
             title="Year-by-Year Breakdown"

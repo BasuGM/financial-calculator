@@ -39,14 +39,14 @@ export function InputsCard({
           Calculate your income tax liability (New Tax Regime FY 2025-26)
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="px-4 md:px-6 space-y-6 md:space-y-8 lg:space-y-12">
         <InputField
           id="gross-income"
           label="Gross annual income"
           value={grossIncome}
           onChange={setGrossIncome}
           min={0}
-          max={100000000}
+          max={5000000}
           step={10000}
           prefix="₹"
         />

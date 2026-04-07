@@ -34,7 +34,7 @@ export function InputsCard({
           Calculate returns on your one-time investment
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-12">
+      <CardContent className="px-4 md:px-6 space-y-6 md:space-y-8 lg:space-y-12">
         <InputField
           id="total-investment"
           label="Total investment"

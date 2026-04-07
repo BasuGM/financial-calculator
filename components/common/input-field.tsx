@@ -25,10 +25,10 @@ export function InputField({ id, label, value, onChange, min, max, step, prefix,
 
   return (
     <div className="space-y-2">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-2 sm:gap-3 md:gap-4">
         <Label htmlFor={id} className="min-w-fit">{label}</Label>
         <div className="flex items-center gap-2">
-          {prefix && <span className="text-2xl">{prefix}</span>}
+          {prefix && <span className="text-base sm:text-lg md:text-xl lg:text-2xl">{prefix}</span>}
           <Input
             id={id}
             type="text"
@@ -71,9 +71,9 @@ export function InputField({ id, label, value, onChange, min, max, step, prefix,
                 setInputValue(String(value));
               }
             }}
-            className="rounded-none text-2xl font-semibold w-32"
+            className="rounded-none text-base sm:text-lg md:text-xl lg:text-2xl font-semibold w-24 sm:w-28 md:w-32 lg:w-36"
           />
-          {suffix && <span className="text-2xl">{suffix}</span>}
+          {suffix && <span className="text-base sm:text-lg md:text-xl lg:text-2xl">{suffix}</span>}
         </div>
       </div>
       <Slider

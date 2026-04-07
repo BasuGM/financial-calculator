@@ -38,7 +38,7 @@ export function InputsCard({
         <CardTitle>SWP Step Up Calculator</CardTitle>
         <CardDescription>Calculate withdrawals with step-up increments</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="px-4 md:px-6 space-y-4 md:space-y-6">
         <InputField
           id="total-investment"
           label="Total Investment"

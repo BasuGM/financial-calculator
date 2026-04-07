@@ -13,16 +13,19 @@ import { ResultsCard, type TaxSlabBreakdown } from "./results-card";
 export default function IncomeTaxCalculator() {
   const [grossIncome, setGrossIncome] = useState(1200000);
   const [deduction80C, setDeduction80C] = useState(0);
-  const [deduction80D, setDeduction80D] = useState(25000);
-  const [otherDeductions, setOtherDeductions] = useState(50000);
+  const [deduction80D, setDeduction80D] = useState(0);
+  const [otherDeductions, setOtherDeductions] = useState(0);
 
   /**
-   * Calculate income tax based on New Tax Regime
-   * Applies progressive tax slabs, calculates tax for each slab, and adds 4% cess
+   * Calculate income tax based on New Tax Regime for FY 2025-26 (AY 2026-27)
+   * Applies progressive tax slabs, standard deduction, rebate u/s 87A, and 4% cess
    * Returns detailed breakdown including effective tax rate and slab-wise calculations
    */
   const calculateIncomeTax = () => {
-    // New Tax Regime Slabs for FY 2023-24 (updated for FY 2025-26)
+    // Standard Deduction for salaried individuals (FY 2025-26)
+    const STANDARD_DEDUCTION = 75000;
+    
+    // New Tax Regime Slabs for FY 2025-26 (AY 2026-27)
     // These slabs apply progressive taxation where each slab is taxed at its respective rate
     const taxSlabs = [
       { min: 0, max: 400000, rate: 0 },           // Up to ₹4L: No tax
@@ -34,10 +37,12 @@ export default function IncomeTaxCalculator() {
       { min: 2400000, max: Infinity, rate: 30 },  // Above ₹24L: 30%
     ];
 
-    // Calculate total deductions and taxable income
+    // Calculate total deductions from user inputs
     const totalDeductions = deduction80C + deduction80D + otherDeductions;
-    // Taxable income is gross income minus all deductions (cannot be negative)
-    const taxableIncome = Math.max(0, grossIncome - totalDeductions);
+    
+    // Calculate taxable income: Gross Income - Standard Deduction - Other Deductions
+    // Standard deduction (₹75,000) is automatically applied for salaried individuals
+    const taxableIncome = Math.max(0, grossIncome - STANDARD_DEDUCTION - totalDeductions);
 
     // Calculate tax slab-wise using progressive taxation
     const taxSlabBreakdown: TaxSlabBreakdown[] = [];
@@ -83,16 +88,41 @@ export default function IncomeTaxCalculator() {
     const cess = totalTax * 0.04;
     const totalTaxWithCess = totalTax + cess;
 
+    // Rebate under Section 87A and Marginal Relief for FY 2025-26
+    // Income after standard deduction ≤ ₹12,00,000 → Full rebate (₹0 tax)
+    // Income slightly above ₹12,00,000 → Marginal relief applies (tax capped at excess)
+    const incomeAfterStandardDeduction = grossIncome - STANDARD_DEDUCTION;
+    const rebateThreshold = 1200000;
+    
+    let rebateAmount = 0;
+    let finalTax = totalTaxWithCess;
+    
+    if (incomeAfterStandardDeduction <= rebateThreshold) {
+      // Full rebate u/s 87A if income after standard deduction ≤ ₹12L
+      rebateAmount = totalTaxWithCess;
+      finalTax = 0;
+    } else {
+      // Marginal relief: Tax cannot exceed income above ₹12L threshold
+      const excessIncome = incomeAfterStandardDeduction - rebateThreshold;
+      if (totalTaxWithCess > excessIncome) {
+        // Apply marginal relief - tax limited to excess income
+        finalTax = excessIncome;
+        rebateAmount = totalTaxWithCess - excessIncome;
+      }
+    }
+
     // Calculate net income after tax deduction
-    const netIncome = grossIncome - totalTaxWithCess;
+    const netIncome = grossIncome - finalTax;
     // Calculate effective tax rate (total tax as percentage of gross income)
-    const effectiveTaxRate = grossIncome > 0 ? (totalTaxWithCess / grossIncome) * 100 : 0;
+    const effectiveTaxRate = grossIncome > 0 ? (finalTax / grossIncome) * 100 : 0;
 
     return {
       grossIncome: Math.round(grossIncome),
+      standardDeduction: STANDARD_DEDUCTION,
       totalDeductions: Math.round(totalDeductions),
       taxableIncome: Math.round(taxableIncome),
-      totalTax: Math.round(totalTaxWithCess),
+      totalTax: Math.round(finalTax),
+      rebateAmount: Math.round(rebateAmount),
       netIncome: Math.round(netIncome),
       effectiveTaxRate,
       taxSlabBreakdown,
@@ -117,9 +147,11 @@ export default function IncomeTaxCalculator() {
 
         <ResultsCard
           grossIncome={results.grossIncome}
+          standardDeduction={results.standardDeduction}
           totalDeductions={results.totalDeductions}
           taxableIncome={results.taxableIncome}
           totalTax={results.totalTax}
+          rebateAmount={results.rebateAmount}
           netIncome={results.netIncome}
           effectiveTaxRate={results.effectiveTaxRate}
           taxSlabBreakdown={results.taxSlabBreakdown}

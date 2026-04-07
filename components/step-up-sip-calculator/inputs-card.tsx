@@ -34,7 +34,7 @@ export function InputsCard({
         <CardTitle>Step Up SIP Calculator</CardTitle>
         <CardDescription>Calculate returns with annual increase in investment</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="px-4 md:px-6 space-y-6 md:space-y-8 lg:space-y-12">
         <InputField
           id="monthly-investment"
           label="Monthly investment"

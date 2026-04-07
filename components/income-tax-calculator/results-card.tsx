@@ -18,9 +18,11 @@ export interface TaxSlabBreakdown {
  */
 interface ResultsCardProps {
   grossIncome: number;
+  standardDeduction: number;
   totalDeductions: number;
   taxableIncome: number;
   totalTax: number;
+  rebateAmount: number;
   netIncome: number;
   effectiveTaxRate: number;
   taxSlabBreakdown: TaxSlabBreakdown[];
@@ -33,9 +35,11 @@ interface ResultsCardProps {
  */
 export function ResultsCard({
   grossIncome,
+  standardDeduction,
   totalDeductions,
   taxableIncome,
   totalTax,
+  rebateAmount,
   netIncome,
   effectiveTaxRate,
   taxSlabBreakdown,
@@ -122,7 +126,8 @@ export function ResultsCard({
       <CardHeader>
         <CardTitle>Results</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="px-4 md:px-6 space-y-4">
+        {/* Income Information Section */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>Gross Annual Income</span>
@@ -137,31 +142,60 @@ export function ResultsCard({
             </span>
           </div>
           <div className="flex justify-between text-sm text-muted-foreground">
+            <span>Standard Deduction</span>
+            <span className="font-semibold text-blue-600">
+              ₹ {standardDeduction.toLocaleString("en-IN")}
+            </span>
+          </div>
+        </div>
+
+        {/* Tax Calculation Section */}
+        <div className="space-y-2 pt-2 border-t">
+          <div className="flex justify-between text-sm text-muted-foreground">
             <span>Taxable Income</span>
             <span className="font-semibold text-foreground">
               ₹ {taxableIncome.toLocaleString("en-IN")}
             </span>
           </div>
-          <div className="flex justify-between text-sm text-muted-foreground">
-            <span>Total Tax</span>
-            <span className="font-semibold text-orange-600">
+          {rebateAmount > 0 && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span className="font-medium">
+                Rebate u/s 87A{" "}
+                <span className="text-xs">(≤ ₹12L)</span>
+              </span>
+              <span className="font-semibold">
+                ₹ {rebateAmount.toLocaleString("en-IN")}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Total Tax Section */}
+        <div className="pt-4 border-t">
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-0">
+            <span className="text-base sm:text-lg font-semibold">Total Tax Payable</span>
+            <span className="text-xl sm:text-2xl font-bold text-orange-600">
               ₹ {totalTax.toLocaleString("en-IN")}
             </span>
           </div>
-          <div className="pt-4 border-t">
-            <div className="flex justify-between">
-              <span className="text-lg font-semibold">Net Annual Income</span>
-              <span className="text-2xl font-bold text-primary">
-                ₹ {netIncome.toLocaleString("en-IN")}
-              </span>
-            </div>
-          </div>
-          <div className="flex justify-between text-sm text-muted-foreground pt-2">
-            <span>Effective Tax Rate</span>
-            <span className="font-semibold text-foreground">
-              {effectiveTaxRate.toFixed(2)}%
+        </div>
+
+        {/* Net Income Section */}
+        <div className="pt-3 border-t">
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-0">
+            <span className="text-base sm:text-lg font-semibold">Net Annual Income</span>
+            <span className="text-xl sm:text-2xl font-bold text-green-600">
+              ₹ {netIncome.toLocaleString("en-IN")}
             </span>
           </div>
+        </div>
+
+        {/* Effective Tax Rate */}
+        <div className="flex justify-between text-sm text-muted-foreground pt-2">
+          <span>Effective Tax Rate</span>
+          <span className="font-semibold text-foreground">
+            {effectiveTaxRate.toFixed(2)}%
+          </span>
         </div>
 
         <ProgressBar
@@ -172,7 +206,7 @@ export function ResultsCard({
           rightLabel="Tax"
         />
 
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-2">
           <TableDialog
             triggerLabel="View Tax Slab Breakdown"
             title="Tax Slab Breakdown"
